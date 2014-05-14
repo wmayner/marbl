@@ -11,6 +11,10 @@ and its children's other parents. The joint distribution of the variables in
 the Markov blanket of a node is sufficient knowledge for calculating the
 distribution of the node.
 
+### Implementations ###
+
+* **Python**: [Marbl-Python](https://github.com/wmayner/marbl-python)
+
 
 Motivation
 ----------
