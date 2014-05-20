@@ -1,7 +1,7 @@
 Marbl specification
 ===================
 
-_Version 0.0.1_
+_Version 0.1.0_
 
 **Marbl** is a specification for a normalized representation of a node in a
 Bayesian network together with its Markov blanket: a **marbl**.
@@ -129,10 +129,21 @@ its state, to represent the Markov blanket with TPMs we need only the node's
 TPM and the TPMs of the node's children. The information that the children's
 other parents give about `n` is encoded in children's TPMs.
 
-So, a Markov blanket in our TPM representation is just the TPM of the node, and
-the unordered collection of its children's TPMs. Thus, to specify a normal form
-for a Markov blanket, we need only specify a canonical ordering for the
-children's TPMs.
+However, information is lost unless we keep track of which of the children's
+parents is the covered node. To do this, we store the index of the column of
+the child's TPM that corresponds to the covered node (after permuting the
+columns to obtain the normal form.)
+
+Thus for each child of the covered node, we have an array where the first
+element is the index of the covered node's column in the child's normalized
+TPM, and the second element is the child's TPM itself.
+
+Now, a Markov blanket in our TPM representation is just the TPM of the node,
+and the unordered collection of its children's normalized TPMs along with the
+index of the column corresponding to the covered node for each of those TPMs.
+
+So, in order to specify a normal form for a Markov blanket, we need only
+specify a canonical ordering for the set of children's TPMs-and-parent-index.
 
 As before, we simply choose the lexicographic ordering.
 
@@ -192,7 +203,8 @@ and `c_1` has the TPM
 
 We compute the normal form of `n`'s Markov blanket as follows:
 
-1. Swapping the labeling of `n`'s parents yeilds the array
+1. First we normalize the covered node's TPM. Swapping the labeling of `n`'s
+   parents yeilds the array
 
         [[0.0, 0.0],
          [1.0, 0.0]]
@@ -204,13 +216,21 @@ We compute the normal form of `n`'s Markov blanket as follows:
 
    so the former is the normal form of `n`'s TPM.
 
-2. Swapping the labeling of `c_0`'s parents also yields the lexicographically
-   least array:
+2. Then we normalize the TPMs of the children, keeping track of which column
+   corresponds to the covered node. Swapping the labeling of `c_0`'s parents
+   yields the lexicographically least array:
    
         [[0.0, 0.1],
          [0.9, 0.0]]
+    
+    In this new column permutation, `n` corresponds to the second column. With
+    zero-based indexing, that gives us:
 
-3. Swapping the labeling of `c_1` yeilds 
+        [ 1, [[0.0, 0.1],
+              [0.9, 0.0]] ]
+
+3. Repeating the process for the next child, we find that swapping the labeling
+   of `c_1` yeilds 
 
         [[0.0, 0.2],
          [0.0, 0.8]]
@@ -220,30 +240,34 @@ We compute the normal form of `n`'s Markov blanket as follows:
         [[0.0, 0.0],
          [0.2, 0.8]]
 
-   so we keep the given one.
+   so we keep the given ordering, which gives
 
-4. We then lexicographically sort the children's transition vectors, which
-   gives
+        [ 0, [[0.0, 0.0],
+              [0.2, 0.8]] ]
 
-        [ [[0.0, 0.0],
-           [0.2, 0.8]],
-           
-          [[0.0, 0.1],
-           [0.9, 0.0]] ]
+4. We then lexicographically sort the normalization and covered-node index of
+   each child, giving
 
-5. We now have our normal form, consisting of the normalized transition vector
-   of `n`, and an array of the normalized transition vectors of `c_1`, and
-   `c_0`, in the canonical order:
+        [  
+            [ 0, [[0.0, 0.0],
+                  [0.2, 0.8]] ],
+            [ 1, [[0.0, 0.1],
+                  [0.9, 0.0]] ]
+        ]
 
-        [  [[0.0, 0.0],
-            [1.0, 0.0]],
+5. We now have our normal form, consisting of the normalized TPM of `n`, and an
+   array of the normalized TPM of `c_1`, and `c_0`, in the canonical order:
 
-
-           [ [[0.0, 0.0],
-              [0.2, 0.8]],
-              
-             [[0.0, 0.1],
-              [0.9, 0.0]] ]  ]
+        [ 
+            [[0.0, 0.0],
+             [1.0, 0.0]],
+            [  
+                [ 0, [[0.0, 0.0],
+                      [0.2, 0.8]] ],
+                [ 1, [[0.0, 0.1],
+                      [0.9, 0.0]] ]  
+            ]   
+        ]
 
 
 Multisets of marbls
