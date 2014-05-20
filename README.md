@@ -1,7 +1,7 @@
 Marbl specification
 ===================
 
-_Version 1.0.0_
+_Version 1.0.1_
 
 **Marbl** is a specification for a normalized representation of a node in a
 Bayesian network together with its Markov blanket: a **marbl**.
@@ -71,6 +71,8 @@ For example, the first TPM above would be represented as
 
     [[0.0, 0.5],
      [0.0, 0.0]]
+
+Probabilities in TPMs must always be represented as floating-point values.
 
 ### Equivalence relation on TPMs ###
 
@@ -142,6 +144,9 @@ normalized TPM, we take the lexicographically-least, where permutations are
 represented as permutations of the sequence `[0, 1, 2, ..., n]`. The new dimension
 index is defined to be the image of the old dimension index under this
 lexicographically-least permutation.
+
+Dimension indices must be represented as integers (not floating-point values,
+as in TPMs).
 
 Thus for each child of the covered node, we have an array where the first
 element is the image of the index of the covered node's dimension in the
@@ -302,8 +307,9 @@ floating-point values.
 So, a marbl should be serialized as appropriately-nested
 [arrays](https://github.com/msgpack/msgpack/blob/master/spec.md#array-format-family)
 of
-[floats](https://github.com/msgpack/msgpack/blob/master/spec.md#formats-float).
-
+[floats](https://github.com/msgpack/msgpack/blob/master/spec.md#formats-float)
+and
+[ints](https://github.com/msgpack/msgpack/blob/master/spec.md#int-format-family).
 
 Hashing
 -------
