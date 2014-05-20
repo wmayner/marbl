@@ -1,7 +1,7 @@
 Marbl specification
 ===================
 
-_Version 0.1.0_
+_Version 1.0.0_
 
 **Marbl** is a specification for a normalized representation of a node in a
 Bayesian network together with its Markov blanket: a **marbl**.
@@ -99,7 +99,7 @@ parents corresponds to permuting the dimensions of the array.
 ### Normal form of a TPM ###
 
 Each parent permutation corresponds to some ordering of the entries in the TPM.
-We define the **normal form** of the TPM to be the **lexicographically least
+We define the **normal form** of the TPM to be the **lexicographically-least
 such ordering**. 
 
 In our example, we have two equivalent TPMs:
@@ -112,7 +112,7 @@ and
     [[0.0, 0.5],
      [0.0, 0.0]]
 
-The first is the lexicographically least of the two, so it is the normal form
+The first is the lexicographically-least of the two, so it is the normal form
 of `n`'s TPM.
 
 **Note on time complexity:**
@@ -124,28 +124,40 @@ involves finding all the permutations of the parent nodes, which is `O(p!)`.
 We now have a normal form for a node as given by a TPM, but the goal is to
 define a normal form for a full Markov blanket.
 
-Since a node's TPM encodes all the information that a node's parents give about
-its state, to represent the Markov blanket with TPMs we need only the node's
-TPM and the TPMs of the node's children. The information that the children's
-other parents give about `n` is encoded in children's TPMs.
+Since a given node's TPM encodes all the information that its parents give
+about its state, to represent the Markov blanket with TPMs we need only the
+covered node's TPM and the TPMs of the covered node's children. The information
+that the children's other parents give about `n` is encoded in the children's
+TPMs.
 
-However, information is lost unless we keep track of which of the children's
-parents is the covered node. To do this, we store the index of the column of
-the child's TPM that corresponds to the covered node (after permuting the
-columns to obtain the normal form.)
+However, when normalizing a child's TPM, information is lost unless we keep
+track of which of the child's parents is the covered node. To do this, we store
+the index of the dimension of the child's TPM that corresponds to the covered
+node after permuting the dimensions to obtain the normal form.
+
+Note that it is possible that more than one permutation of the dimensions
+yeilds the TPM's normal form, in which case the new index of covered-node's
+dimension is not well-defined. So, of the parent permuations that yield the
+normalized TPM, we take the lexicographically-least, where permutations are
+represented as permutations of the sequence `[0, 1, 2, ..., n]`. The new dimension
+index is defined to be the image of the old dimension index under this
+lexicographically-least permutation.
 
 Thus for each child of the covered node, we have an array where the first
-element is the index of the covered node's column in the child's normalized
-TPM, and the second element is the child's TPM itself.
+element is the image of the index of the covered node's dimension in the
+child's un-normalized TPM under the lexicographically-least permutation that
+yeilds its normalized TPM, and the second element is the normalized TPM itself.
+We'll call this structure a **normalized augmented child TPM**.
 
-Now, a Markov blanket in our TPM representation is just the TPM of the node,
-and the unordered collection of its children's normalized TPMs along with the
-index of the column corresponding to the covered node for each of those TPMs.
+At this point, a Markov blanket in our TPM representation is just the TPM of
+the node, and the unordered collection of its augmented child TPMs. So, in
+order to specify a Markov blanket's normal form, we need only specify a
+canonical ordering for the set of normalized augmented child TPMs. 
 
-So, in order to specify a normal form for a Markov blanket, we need only
-specify a canonical ordering for the set of children's TPMs-and-parent-index.
+As usual, we simply choose the lexicographic ordering.
 
-As before, we simply choose the lexicographic ordering.
+**Note**: All implementations of this specification must use zero-based
+indexing.
 
 
 Example
@@ -216,15 +228,18 @@ We compute the normal form of `n`'s Markov blanket as follows:
 
    so the former is the normal form of `n`'s TPM.
 
-2. Then we normalize the TPMs of the children, keeping track of which column
+2. Then we normalize the TPMs of the children, keeping track of which dimension
    corresponds to the covered node. Swapping the labeling of `c_0`'s parents
-   yields the lexicographically least array:
+   yields the lexicographically-least array:
    
         [[0.0, 0.1],
          [0.9, 0.0]]
     
-    In this new column permutation, `n` corresponds to the second column. With
-    zero-based indexing, that gives us:
+    With this new dimension permutation, `n` corresponds to the second
+    dimension (in this small example, there can only be one permutation of the
+    dimensions that yields the normalized TPM, so we don't need to worry about
+    finding the right new dimension index). With zero-based indexing, that
+    gives us a new covered-node dimension index of `1`:
 
         [ 1, [[0.0, 0.1],
               [0.9, 0.0]] ]
@@ -245,8 +260,7 @@ We compute the normal form of `n`'s Markov blanket as follows:
         [ 0, [[0.0, 0.0],
               [0.2, 0.8]] ]
 
-4. We then lexicographically sort the normalization and covered-node index of
-   each child, giving
+4. We then lexicographically sort the normalized augmented child TPMs:
 
         [  
             [ 0, [[0.0, 0.0],
